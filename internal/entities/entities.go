@@ -1,20 +1,14 @@
 package entities
 
 import (
-	"math/big"
-
 	"cryptography-server/pkg/crypto/diffie_helman"
+	customRsa "cryptography-server/pkg/crypto/rsa"
 )
 
 type Container struct {
-	Message   string    `json:"message"`
-	Sign      string    `json:"sign"`
-	PublicKey PublicKey `json:"public_key"`
-}
-
-type PublicKey struct {
-	E *big.Int `json:"e"`
-	N *big.Int `json:"n"`
+	Message   string               `json:"message"`
+	Sign      []int                `json:"sign"`
+	PublicKey *customRsa.PublicKey `json:"public_key"`
 }
 
 type ClientInformation struct {

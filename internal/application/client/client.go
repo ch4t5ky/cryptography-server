@@ -2,12 +2,16 @@ package client
 
 import (
 	"bytes"
+	"crypto/md5"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"math/big"
 	"net/http"
 
+	"cryptography-server/internal/entities"
 	"cryptography-server/pkg/crypto/diffie_helman"
+	customRsa "cryptography-server/pkg/crypto/rsa"
 	"github.com/D3vR4pt0rs/logger"
 )
 
@@ -87,4 +91,50 @@ func (c Client) GenerateFullKey(uuid string) {
 	c.dhClient.GenerateFullKey(partialKeyResponse.PartialKey, false)
 
 	logger.Info.Println("Generated full key", c.dhClient.GetFullKey())
+}
+
+func (c Client) SendMessage(message string, uuid string, publicKey *customRsa.PublicKey, privateKey *customRsa.PrivateKey) bool {
+	hash := md5.Sum([]byte(message))
+
+	hexHash := hex.EncodeToString(hash[:])
+	fmt.Println(hexHash)
+
+	sign := c.getSignFromHash(hexHash, privateKey)
+	fmt.Println(sign)
+
+	container := entities.Container{Message: message, Sign: sign, PublicKey: publicKey}
+	jsonData, err := json.Marshal(MessagePayload{Uuid: uuid, Container: container})
+	url := fmt.Sprintf("%s/message", c.url)
+
+	request, err := http.NewRequest(http.MethodPost, url, bytes.NewBuffer(jsonData))
+	if err != nil {
+		logger.Error.Fatal("Error reading request. ", err)
+	}
+
+	request.Header.Set("Content-Type", "application/json")
+
+	resp, err := c.httpClient.Do(request)
+	if err != nil {
+		logger.Error.Fatalf("Error reading response. ", err)
+	}
+	defer resp.Body.Close()
+	return true
+}
+
+func (c Client) getSignFromHash(hash string, privateKey *customRsa.PrivateKey) []int {
+	var hashCodes []int
+	for _, letter := range hash {
+		hashCodes = append(hashCodes, int(letter))
+	}
+	sign := customRsa.DecryptRSA(privateKey, hashCodes)
+	return sign
+}
+
+func (c Client) getHashFromSign(sign []int, publicKey *customRsa.PublicKey) string {
+	hashCodes := customRsa.EncryptRSA(publicKey, sign)
+	hash := ""
+	for _, value := range hashCodes {
+		hash += string(value)
+	}
+	return hash
 }

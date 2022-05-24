@@ -1,6 +1,10 @@
 package client
 
-import "math/big"
+import (
+	"math/big"
+
+	"cryptography-server/internal/entities"
+)
 
 type UserSettingsResponse struct {
 	Id        string   `json:"id"`
@@ -9,4 +13,9 @@ type UserSettingsResponse struct {
 
 type PartialKeyResponse struct {
 	PartialKey *big.Int `json:"partial_key"`
+}
+
+type MessagePayload struct {
+	Uuid      string             `json:"uuid"`
+	Container entities.Container `json:"container"`
 }
