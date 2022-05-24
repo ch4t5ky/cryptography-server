@@ -10,6 +10,7 @@ import (
 	"cryptography-server/internal/entities"
 	"cryptography-server/pkg/crypto/diffie_helman"
 	customRsa "cryptography-server/pkg/crypto/rsa"
+	"cryptography-server/pkg/crypto/symmetric"
 	"github.com/D3vR4pt0rs/logger"
 	uuid2 "github.com/google/uuid"
 )
@@ -17,7 +18,7 @@ import (
 type Controller interface {
 	CreateNewConnection(powerKey *big.Int) (string, *big.Int)
 	GetPartialKey(uuid string, partialKey *big.Int) *big.Int
-	ValidateMessage(container entities.Container) bool
+	ValidateMessage(uuid string, container entities.Container) bool
 }
 
 type application struct {
@@ -58,13 +59,30 @@ func (app application) GetPartialKey(uuid string, partialKey *big.Int) *big.Int 
 	return app.clients[uuid].Client.GetPartialKey()
 }
 
-func (app application) ValidateMessage(container entities.Container) bool {
-	decryptedHash := app.getHashFromSign(container.Sign, container.PublicKey)
+func (app application) ValidateMessage(uuid string, container entities.Container) bool {
+	logger.Info.Println(container)
 
-	messageHash := md5.Sum([]byte(container.Message))
+	fullkey := new(big.Int)
+	fullkey.Set(app.clients[uuid].Client.GetFullKey())
+
+	hashCodes := symmetric.XorDataWithKey(container.Sign, fullkey)
+	decryptedHash := app.getHashFromSign(hashCodes, container.PublicKey)
+
+	message := app.asciiCodesToString(symmetric.XorDataWithKey(container.Message, fullkey))
+	logger.Info.Println("Received message: ", message)
+	messageHash := md5.Sum([]byte(message))
+
 	computedHash := hex.EncodeToString(messageHash[:])
 	logger.Info.Println(fmt.Sprintf("Received sign: %s.\n Computed sign: %s.", decryptedHash, computedHash))
 	return decryptedHash == computedHash
+}
+
+func (app application) asciiCodesToString(codes []int) string {
+	message := ""
+	for _, code := range codes {
+		message += string(code)
+	}
+	return message
 }
 
 func (app application) getHashFromSign(sign []int, publicKey *customRsa.PublicKey) string {

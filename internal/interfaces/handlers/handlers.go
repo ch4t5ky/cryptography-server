@@ -66,7 +66,7 @@ func validateMessage(app server.Controller) http.Handler {
 			return
 		}
 
-		status := app.ValidateMessage(messagePayload.Container)
+		status := app.ValidateMessage(messagePayload.Uuid, messagePayload.Container)
 
 		w.Header().Set("Content-Type", "application/json")
 

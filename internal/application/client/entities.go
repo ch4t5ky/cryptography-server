@@ -19,3 +19,7 @@ type MessagePayload struct {
 	Uuid      string             `json:"uuid"`
 	Container entities.Container `json:"container"`
 }
+
+type MessageResponse struct {
+	Status bool `json:"status"`
+}

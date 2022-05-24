@@ -6,7 +6,7 @@ import (
 )
 
 type Container struct {
-	Message   string               `json:"message"`
+	Message   []int                `json:"message"`
 	Sign      []int                `json:"sign"`
 	PublicKey *customRsa.PublicKey `json:"public_key"`
 }
